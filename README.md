@@ -1,6 +1,6 @@
 # Copynator 📋
 
-**Copynator** é um gerenciador de área de transferência moderno e leve para Linux, inspirado no histórico de área de transferência do Windows 11 (`Win + V`). Construído em **Rust** com **GTK4** e **Libadwaita**, integra-se perfeitamente ao GNOME e ao tema do sistema (modo claro/escuro e cores de destaque).
+**Copynator** é um gerenciador de área de transferência moderno e leve para Linux, inspirado no histórico de área de transferência do Windows 11 (`Win + V`). Construído em **C++** com **GTK4**, integra-se perfeitamente ao GNOME e ao tema do sistema (modo claro/escuro e cores de destaque).
 
 ---
 
@@ -41,11 +41,12 @@
 ### 1. Compilar e Instalar
 ```bash
 # Compilar binário otimizado
-cargo build --release
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 
 # Criar link simbólico para a sua pasta de binários (~/.local/bin)
 mkdir -p ~/.local/bin
-ln -sf $(pwd)/target/release/copynator ~/.local/bin/copynator
+ln -sf $(pwd)/build/copynator ~/.local/bin/copynator
 ```
 
 ### 2. Ativar o Atalho Shift + Super + V no GNOME

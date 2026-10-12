@@ -1,0 +1,18 @@
+# Diretórios de build gerados pelo CMake
+build/
+build-*/
+cmake-build-*/
+
+# Arquivos gerados por ferramentas
+compile_commands.json
+.cache/
+
+# Arquivos de editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Esquemas compilados do GSettings / extensão empacotada
+*.compiled
+*.shell-extension.zip

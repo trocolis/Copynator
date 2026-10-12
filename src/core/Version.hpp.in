@@ -1,0 +1,25 @@
+// =============================================================================
+// Version.hpp (GERADO AUTOMATICAMENTE pelo CMake a partir de Version.hpp.in)
+//
+// Não edite o arquivo gerado: a fonte da verdade é o `project(VERSION ...)`
+// no CMakeLists.txt raiz.
+// =============================================================================
+#pragma once
+
+#include <string_view>
+
+namespace copynator::version {
+
+// Número da versão no formato RELEASE.FEATURE.HOTFIX
+inline constexpr int kRelease = @PROJECT_VERSION_MAJOR@;
+inline constexpr int kFeature = @PROJECT_VERSION_MINOR@;
+inline constexpr int kHotfix = @PROJECT_VERSION_PATCH@;
+
+// Versão completa como texto (ex.: "0.1.0")
+inline constexpr std::string_view kString = "@PROJECT_VERSION@";
+
+// Nome e identificador da aplicação (usado no D-Bus, GSettings e .desktop)
+inline constexpr std::string_view kAppName = "Copynator";
+inline constexpr std::string_view kAppId = "io.github.copynator";
+
+} // namespace copynator::version

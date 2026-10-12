@@ -1,0 +1,11 @@
+# Estilo de formatação do código C++ do Copynator
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+BreakBeforeBraces: Attach
+PointerAlignment: Left
+IncludeBlocks: Regroup
+NamespaceIndentation: None
