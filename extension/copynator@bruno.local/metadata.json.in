@@ -3,6 +3,6 @@
   "name": "Copynator",
   "description": "Integra o Copynator ao GNOME Shell: ícone no painel, monitoramento da área de transferência no Wayland e posicionamento da janela no cursor ou no centro da tela.",
   "shell-version": ["45", "46", "47", "48", "49", "50", "51"],
-  "url": "https://github.com/copynator/copynator",
+  "url": "https://github.com/trocolis/Copynator",
   "version-name": "@PROJECT_VERSION@"
 }

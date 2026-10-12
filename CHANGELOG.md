@@ -2,6 +2,10 @@
 
 Versionamento: `RELEASE.FEATURE.HOTFIX`.
 
+## [1.1.1] — 2026-10-11
+### Corrigido
+- URL do projeto no `metadata.json` da extensão aponta para o repositório real.
+
 ## [1.1.0] — 2026-10-11
 ### Adicionado
 - `--status` e `--setup-shortcut` também detectam conflitos com atalhos de extensões habilitadas do GNOME Shell (ex.: outros gerenciadores de área de transferência).
