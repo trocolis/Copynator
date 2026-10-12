@@ -225,11 +225,14 @@ void HistoryWindow::chooseRow(Gtk::ListBoxRow* row) {
     if (historyRow == nullptr) {
         return;
     }
-    // Copia o item antes de esconder a janela (a linha pode ser destruída por
-    // um recarregamento posterior).
+    // Copia o item antes de qualquer coisa (a linha pode ser destruída por um
+    // recarregamento posterior).
     const auto item = historyRow->item();
-    set_visible(false);
+
+    // A área de transferência é definida ANTES de esconder a janela: no
+    // Wayland o compositor só aceita a seleção de um cliente com foco.
     itemChosen_.emit(item);
+    set_visible(false);
 }
 
 // -----------------------------------------------------------------------------
