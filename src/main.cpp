@@ -44,6 +44,7 @@ int printStatus() {
         std::println("Daemon:    em execução (versão {})", status->version);
         std::println("Histórico: {} item(ns)", status->itemCount);
         std::println("Janela:    {}", status->windowVisible ? "visível" : "escondida");
+        std::println("Monitor:   {}", status->monitorDescription);
     } else {
         std::println("Daemon:    parado (inicie com `copynator --background`)");
     }

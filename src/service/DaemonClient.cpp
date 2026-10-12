@@ -59,13 +59,16 @@ std::optional<DaemonStatus> DaemonClient::queryStatus() {
         Glib::Variant<Glib::ustring> version;
         Glib::Variant<guint32> itemCount;
         Glib::Variant<bool> windowVisible;
+        Glib::Variant<Glib::ustring> monitor;
         reply.get_child(version, 0);
         reply.get_child(itemCount, 1);
         reply.get_child(windowVisible, 2);
+        reply.get_child(monitor, 3);
         return DaemonStatus{
             .version = version.get().raw(),
             .itemCount = itemCount.get(),
             .windowVisible = windowVisible.get(),
+            .monitorDescription = monitor.get().raw(),
         };
     } catch (const Glib::Error&) {
         return std::nullopt;

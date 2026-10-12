@@ -7,6 +7,7 @@
 #   copynator_core    -> regras de negócio puras, sem GTK (testável)
 #   copynator_storage -> persistência (SQLite), implementa as portas do core
 #   copynator_service -> interface D-Bus do daemon (servidor e cliente)
+#   copynator_platform-> integrações com o sistema (área de transferência, etc.)
 #   copynator_ui      -> interface gráfica (gtkmm + libadwaita)
 #   copynator_app     -> composição da aplicação (liga todas as camadas)
 #   copynator (exe) -> ponto de entrada que compõe todas as camadas
@@ -78,13 +79,23 @@ target_link_libraries(copynator_service
 copynator_set_warnings(copynator_service)
 
 # -----------------------------------------------------------------------------
+# Camada platform: integrações com o sistema operacional/desktop
+# -----------------------------------------------------------------------------
+add_library(copynator_platform STATIC
+    platform/GdkClipboardMonitor.cpp
+)
+target_link_libraries(copynator_platform
+    PUBLIC copynator_core PkgConfig::GTKMM)
+copynator_set_warnings(copynator_platform)
+
+# -----------------------------------------------------------------------------
 # Camada app: composição
 # -----------------------------------------------------------------------------
 add_library(copynator_app STATIC
     app/CopynatorApplication.cpp
 )
 target_link_libraries(copynator_app
-    PUBLIC copynator_ui copynator_storage copynator_service
+    PUBLIC copynator_ui copynator_storage copynator_service copynator_platform
     PRIVATE PkgConfig::LIBADWAITA)
 copynator_set_warnings(copynator_app)
 

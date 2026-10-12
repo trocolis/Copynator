@@ -6,7 +6,8 @@
 //   - receber a linha de comando de novas invocações (`copynator --center`
 //     executado com o daemon já rodando é repassado para esta instância);
 //   - criar a janela sob demanda e tratar a escolha de itens;
-//   - publicar a interface D-Bus usada pela extensão do GNOME Shell.
+//   - publicar a interface D-Bus usada pela extensão do GNOME Shell;
+//   - monitorar a área de transferência e alimentar o histórico.
 //
 // Ciclo de vida:
 //   - `--background` segura (hold) a aplicação sem mostrar a janela;
@@ -18,6 +19,7 @@
 #pragma once
 
 #include "core/HistoryService.hpp"
+#include "core/IClipboardMonitor.hpp"
 #include "service/DaemonInterface.hpp"
 
 #include <functional>
@@ -71,6 +73,7 @@ private:
 
     HistoryServiceFactory historyFactory_;
     std::unique_ptr<core::HistoryService> history_;
+    std::unique_ptr<core::IClipboardMonitor> clipboardMonitor_;
     std::unique_ptr<ui::HistoryWindow> window_;
     std::unique_ptr<service::DaemonDBusService> dbusService_;
     bool backgroundHeld_ = false;

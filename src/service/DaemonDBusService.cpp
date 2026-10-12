@@ -115,6 +115,7 @@ void DaemonDBusService::onMethodCall(
             Glib::Variant<Glib::ustring>::create(status.version),
             Glib::Variant<guint32>::create(static_cast<guint32>(status.itemCount)),
             Glib::Variant<bool>::create(status.windowVisible),
+            Glib::Variant<Glib::ustring>::create(status.monitorDescription),
         }));
         return;
     }

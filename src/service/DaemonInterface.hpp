@@ -22,6 +22,7 @@ struct DaemonStatus {
     std::string version;
     std::size_t itemCount = 0;
     bool windowVisible = false;
+    std::string monitorDescription; // mecanismo de monitoramento em uso
 };
 
 // Operações expostas pelo daemon (implementadas pela camada app).
@@ -75,6 +76,7 @@ inline constexpr std::string_view kIntrospectionXml = R"xml(
       <arg name="version" type="s" direction="out"/>
       <arg name="item_count" type="u" direction="out"/>
       <arg name="window_visible" type="b" direction="out"/>
+      <arg name="monitor" type="s" direction="out"/>
     </method>
     <!-- Emitido quando a janela é mostrada, para que a extensão a posicione -->
     <signal name="WindowShown">

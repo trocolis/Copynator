@@ -5,6 +5,7 @@
 
 #include "core/CommandLine.hpp"
 #include "core/Version.hpp"
+#include "platform/GdkClipboardMonitor.hpp"
 #include "service/DaemonDBusService.hpp"
 #include "ui/HistoryWindow.hpp"
 #include "ui/StyleSheet.hpp"
@@ -62,6 +63,13 @@ void CopynatorApplication::on_startup() {
 
     history_ = historyFactory_();
 
+    // Cada texto copiado no sistema vira um item do histórico. O próprio
+    // Copynator também dispara o monitor ao copiar um item, o que apenas o
+    // move para o topo (a deduplicação evita repetições).
+    clipboardMonitor_ =
+        std::make_unique<platform::GdkClipboardMonitor>(Gdk::Display::get_default());
+    clipboardMonitor_->start([this](const std::string& text) { history_->recordCopy(text); });
+
     // A interface D-Bus é publicada na mesma conexão do GApplication, que já
     // é dona do nome io.github.copynator no barramento de sessão.
     dbusService_ = std::make_unique<service::DaemonDBusService>(*this);
@@ -72,6 +80,7 @@ void CopynatorApplication::on_startup() {
 
 void CopynatorApplication::on_shutdown() {
     dbusService_.reset();
+    clipboardMonitor_.reset();
     Gtk::Application::on_shutdown();
 }
 
@@ -172,6 +181,7 @@ service::DaemonStatus CopynatorApplication::status() const {
         .version = std::string(version::kString),
         .itemCount = history_->items().size(),
         .windowVisible = window_ && window_->get_visible(),
+        .monitorDescription = std::string(clipboardMonitor_->description()),
     };
 }
 
