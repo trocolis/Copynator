@@ -2,6 +2,16 @@
 
 Versionamento: `RELEASE.FEATURE.HOTFIX`.
 
+## [1.3.0] — 2026-10-11
+### Adicionado
+- Escolher um item (clique ou Enter) também o cola no aplicativo que estava em foco, como no Win+V. A extensão envia `Ctrl+V` (ou `Ctrl+Shift+V` em terminais) por um teclado virtual do GNOME Shell, após o sinal D-Bus `PasteRequested`.
+
+### Alterado
+- Botões de fixar e excluir lado a lado, deixando os cartões mais compactos.
+
+### Corrigido
+- Compatibilidade com o GNOME 51: o teclado virtual é obtido por `global.stage.context.get_backend()`.
+
 ## [1.2.0] — 2026-10-11
 ### Alterado
 - Itens de texto comum não exibem mais a etiqueta "Texto" (apenas "Link" e "Código").

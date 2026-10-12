@@ -104,7 +104,7 @@ copynator --status
 - **Digitar**: Filtra a lista instantaneamente.
 - **Seta para baixo (`↓`)**: Move o foco do campo de busca para o primeiro item da lista.
 - **Setas `↑` / `↓`**: Navega entre os itens do histórico.
-- **`Enter`**: Seleciona o item, copia para a área de transferência e fecha a janela.
+- **`Enter`** ou **clique**: Copia o item, fecha a janela e **cola** no aplicativo que estava em foco (`Ctrl+V`, ou `Ctrl+Shift+V` em terminais), como no Win+V. A colagem automática é feita pela extensão do GNOME Shell.
 - **`Ctrl + P`**: Fixa/desafixa o item em foco.
 - **`Delete`**: Exclui o item em foco.
 - **`Esc`**: Fecha o painel.
@@ -119,6 +119,7 @@ copynator --status
 | Monitorar a área de transferência em segundo plano | Daemon (XFixes via GDK) | Extensão do GNOME Shell |
 | Abrir na posição do cursor | Extensão do GNOME Shell | Extensão do GNOME Shell |
 | Ícone na barra superior | Extensão (GNOME) ou SNI | Extensão (GNOME) ou SNI |
+| Colar automaticamente o item escolhido | Extensão do GNOME Shell | Extensão do GNOME Shell |
 
 No Wayland, por segurança, aplicativos comuns não podem ler a área de transferência em segundo plano, consultar a posição do cursor nem posicionar as próprias janelas. Apenas o GNOME Shell pode fazer isso, por isso a **extensão é necessária no Wayland**. Sem ela, a janela abre na posição escolhida pelo GNOME e só registra cópias feitas enquanto está em foco.
 
@@ -131,6 +132,7 @@ No Wayland, por segurança, aplicativos comuns não podem ler a área de transfe
 │ indicator.js        ícone no painel (clique esq./dir.)│
 │ clipboardWatcher.js observa a área de transferência   │
 │ windowPlacer.js     posiciona a janela (cursor/centro)│
+│ paster.js           cola o item escolhido (Ctrl+V)    │
 │ daemonClient.js     cliente D-Bus do daemon           │
 └──────────────────────┬───────────────────────────────┘
                        │ D-Bus: io.github.copynator.Daemon
@@ -158,6 +160,7 @@ As dependências apontam sempre para o `core`. Ele define as portas (`IHistoryRe
 | `Clear() → u` | Limpa o histórico não fixado |
 | `GetStatus() → (s, u, b, s)` | Versão, total de itens, janela visível e monitor em uso |
 | sinal `WindowShown(s placement)` | Emitido ao mostrar a janela, para a extensão posicioná-la |
+| sinal `PasteRequested()` | Emitido após copiar o item escolhido, para a extensão colá-lo na janela anterior |
 
 ### Versionamento
 
