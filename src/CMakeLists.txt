@@ -6,6 +6,8 @@
 #
 #   copynator_core    -> regras de negócio puras, sem GTK (testável)
 #   copynator_storage -> persistência (SQLite), implementa as portas do core
+#   copynator_ui      -> interface gráfica (gtkmm + libadwaita)
+#   copynator_app     -> composição da aplicação (liga todas as camadas)
 #   copynator (exe) -> ponto de entrada que compõe todas as camadas
 # =============================================================================
 
@@ -47,10 +49,36 @@ target_link_libraries(copynator_storage
 copynator_set_warnings(copynator_storage)
 
 # -----------------------------------------------------------------------------
+# Camada ui: gtkmm 4 + libadwaita (API C, usada para tema/cores do sistema)
+# -----------------------------------------------------------------------------
+pkg_check_modules(GTKMM REQUIRED IMPORTED_TARGET gtkmm-4.0)
+pkg_check_modules(LIBADWAITA REQUIRED IMPORTED_TARGET libadwaita-1)
+
+add_library(copynator_ui STATIC
+    ui/HistoryRow.cpp
+    ui/HistoryWindow.cpp
+    ui/StyleSheet.cpp
+)
+target_link_libraries(copynator_ui
+    PUBLIC copynator_core PkgConfig::GTKMM)
+copynator_set_warnings(copynator_ui)
+
+# -----------------------------------------------------------------------------
+# Camada app: composição
+# -----------------------------------------------------------------------------
+add_library(copynator_app STATIC
+    app/CopynatorApplication.cpp
+)
+target_link_libraries(copynator_app
+    PUBLIC copynator_ui copynator_storage
+    PRIVATE PkgConfig::LIBADWAITA)
+copynator_set_warnings(copynator_app)
+
+# -----------------------------------------------------------------------------
 # Executável principal
 # -----------------------------------------------------------------------------
 add_executable(copynator main.cpp)
-target_link_libraries(copynator PRIVATE copynator_core copynator_storage)
+target_link_libraries(copynator PRIVATE copynator_app)
 copynator_set_warnings(copynator)
 
 install(TARGETS copynator RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
