@@ -5,7 +5,9 @@
 // =============================================================================
 #include "storage/SqliteHistoryRepository.hpp"
 
+#include <filesystem>
 #include <gtest/gtest.h>
+#include <unistd.h>
 
 using namespace copynator;
 using namespace std::chrono_literals;
@@ -106,4 +108,43 @@ TEST_F(SqliteHistoryRepositoryTest, MissingIdsReturnFalse) {
     EXPECT_FALSE(repository.setPinned(999, true));
     EXPECT_FALSE(repository.remove(999));
     EXPECT_FALSE(repository.findById(999).has_value());
+}
+
+// Bancos da versão anterior (Rust) têm o histórico importado na migração,
+// com datas convertidas de segundos para milissegundos.
+TEST(SqliteHistoryRepositoryLegacyTest, ImportsLegacyRustHistory) {
+    const auto path = std::filesystem::temp_directory_path() /
+                      ("copynator-legacy-" + std::to_string(::getpid()) + ".db");
+    std::filesystem::remove(path);
+    {
+        storage::SqliteDatabase legacy(path.string());
+        legacy.execute(R"sql(
+            CREATE TABLE clipboard_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL UNIQUE,
+                content_type TEXT NOT NULL,
+                is_pinned INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                char_count INTEGER NOT NULL);
+            INSERT INTO clipboard_history VALUES (1, 'antigo', 'texto', 1, 100, 200, 6);
+            INSERT INTO clipboard_history VALUES (2, 'https://gnome.org', 'texto', 0, 100, 300, 17);
+        )sql");
+    }
+
+    const storage::SqliteHistoryRepository repository(path.string());
+    const auto items = repository.list("");
+    ASSERT_EQ(items.size(), 2U);
+    EXPECT_EQ(items[0].content, "antigo"); // fixado vem primeiro
+    EXPECT_TRUE(items[0].pinned);
+    EXPECT_EQ(items[0].copiedAt, core::Timestamp{std::chrono::seconds{200}});
+    EXPECT_EQ(items[1].kind, ContentKind::Link); // reclassificado
+
+    // Reabrir não importa de novo (a migração roda apenas uma vez).
+    const storage::SqliteHistoryRepository reopened(path.string());
+    EXPECT_EQ(reopened.list("").size(), 2U);
+
+    std::filesystem::remove(path);
+    std::filesystem::remove(path.string() + "-wal");
+    std::filesystem::remove(path.string() + "-shm");
 }

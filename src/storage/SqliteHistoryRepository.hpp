@@ -12,6 +12,10 @@
 //
 // A versão do esquema é guardada em `PRAGMA user_version`, permitindo
 // migrações futuras sem perder o histórico do usuário.
+//
+// Compatibilidade: bancos criados pela versão anterior (Rust), com a tabela
+// `clipboard_history`, têm os itens importados na migração para a versão 1.
+// A tabela antiga é preservada intacta.
 // =============================================================================
 #pragma once
 
@@ -40,6 +44,10 @@ public:
 private:
     // Cria/migra as tabelas para a versão atual do esquema.
     void migrate();
+
+    // Importa o histórico da versão anterior do Copynator (escrita em Rust),
+    // que usava a tabela `clipboard_history` no mesmo arquivo de banco.
+    void importLegacyHistory();
 
     // `mutable` porque consultas (const) também precisam preparar comandos.
     mutable SqliteDatabase database_;

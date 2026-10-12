@@ -14,9 +14,9 @@
   - **Pelo atalho (`Shift + Super + V`)**: Abre exatamente na **posição do cursor do mouse**, respeitando os limites da tela (sempre visível por completo, sem ser cortada).
   - **Pelo ícone na barra**: Abre perfeitamente no **centro da tela**.
 - 📌 **Ícone na Área de Indicadores (Junto ao Wifi, Volume e Bateria)**:
-  - Não polui a dock/dash do sistema (`NoDisplay=true`, `skip_taskbar`).
+  - Não polui a grade de aplicativos nem a dash (`NoDisplay=true`); a janela só existe enquanto está aberta.
   - Extensão nativa do GNOME Shell em `~/.local/share/gnome-shell/extensions/copynator@bruno.local`.
-  - Suporte adicional a StatusNotifierItem / AppIndicator via `ksni`.
+  - Suporte adicional a StatusNotifierItem / AppIndicator (KDE, XFCE, Cinnamon...), implementado diretamente via D-Bus. É desativado automaticamente quando a extensão do GNOME está ativa, evitando ícone duplicado.
   - **Clique esquerdo**: Abre/alterna a janela no centro da tela.
   - **Clique direito**: Menu rápido com opções de limpeza e atalho.
 - 🎨 **Respeita o Tema do Sistema**:
@@ -31,30 +31,53 @@
 - 🏷️ **Categorização e Badges**:
   - Identifica automaticamente links (`http/https`), blocos de código e textos comuns com etiquetas e contadores de caracteres.
   - Exibe data/hora relativa amigável (*Agora*, *há 5 min*, *ontem*).
+- 🔒 **Privacidade**:
+  - Senhas copiadas de gerenciadores de senha (marcadas com `x-kde-passwordManagerHint`) não entram no histórico.
 - 🚀 **Performance & Eficiência**:
-  - Monitoramento contínuo em tempo real via extensões XFixes/Wayland com fallback leve, consumindo menos de 0.01% de CPU em segundo plano.
+  - Monitoramento orientado a eventos, sem polling: XFixes (via GDK) no X11 e `Meta.Selection` (pela extensão do GNOME Shell) no Wayland.
 
 ---
 
 ## 🚀 Como Executar e Usar
 
-### 1. Compilar e Instalar
+### Dependências (Arch Linux)
 ```bash
-# Compilar binário otimizado
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-
-# Criar link simbólico para a sua pasta de binários (~/.local/bin)
-mkdir -p ~/.local/bin
-ln -sf $(pwd)/build/copynator ~/.local/bin/copynator
+sudo pacman -S --needed base-devel cmake ninja gtkmm-4.0 libadwaita sqlite gtest
 ```
 
-### 2. Ativar o Atalho Shift + Super + V no GNOME
-O Copynator inclui um configurador automático:
+### 1. Compilar e Instalar
+```bash
+# Configura a instalação na pasta do usuário (~/.local)
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$HOME/.local
+
+# Compila e roda os testes
+cmake --build build
+ctest --test-dir build
+
+# Instala o binário, o .desktop, o autostart e a extensão do GNOME Shell
+cmake --install build
+```
+
+São instalados:
+
+| Arquivo | Destino |
+|---|---|
+| Executável | `~/.local/bin/copynator` |
+| Entrada da aplicação (`NoDisplay=true`) | `~/.local/share/applications/io.github.copynator.desktop` |
+| Autostart do daemon (`--background`) | `~/.config/autostart/io.github.copynator.desktop` |
+| Extensão do GNOME Shell | `~/.local/share/gnome-shell/extensions/copynator@bruno.local/` |
+
+### 2. Ativar a extensão e o atalho Shift + Super + V no GNOME
+```bash
+gnome-extensions enable copynator@bruno.local
+```
+> No **Wayland**, o GNOME Shell só carrega extensões recém-instaladas após encerrar e iniciar a sessão novamente.
+
+O Copynator inclui um configurador automático do atalho (ele também avisa se outro atalho já usa a mesma combinação):
 ```bash
 copynator --setup-shortcut
 ```
-Para verificar se o atalho está ativo:
+Para verificar o daemon, o monitoramento e o atalho:
 ```bash
 copynator --status
 ```
@@ -68,7 +91,11 @@ copynator --status
   copynator --center      # Abre no centro da tela
   copynator --background  # Inicia em segundo plano (modo daemon)
   copynator --clear       # Limpa o histórico não fixado
+  copynator --status      # Mostra o estado do daemon e do atalho
+  copynator --help        # Lista todas as opções
   ```
+
+> Se o daemon já estiver rodando, qualquer chamada `copynator ...` é repassada a ele (instância única).
 
 ---
 
@@ -78,5 +105,64 @@ copynator --status
 - **Seta para baixo (`↓`)**: Move o foco do campo de busca para o primeiro item da lista.
 - **Setas `↑` / `↓`**: Navega entre os itens do histórico.
 - **`Enter`**: Seleciona o item, copia para a área de transferência e fecha a janela.
+- **`Ctrl + P`**: Fixa/desafixa o item em foco.
+- **`Delete`**: Exclui o item em foco.
 - **`Esc`**: Fecha o painel.
 - **Clique fora**: Fecha o painel automaticamente.
+
+---
+
+## 🐧 X11 e Wayland
+
+| Recurso | X11 | Wayland (GNOME) |
+|---|---|---|
+| Monitorar a área de transferência em segundo plano | Daemon (XFixes via GDK) | Extensão do GNOME Shell |
+| Abrir na posição do cursor | Extensão do GNOME Shell | Extensão do GNOME Shell |
+| Ícone na barra superior | Extensão (GNOME) ou SNI | Extensão (GNOME) ou SNI |
+
+No Wayland, por segurança, aplicativos comuns não podem ler a área de transferência em segundo plano, consultar a posição do cursor nem posicionar as próprias janelas. Apenas o GNOME Shell pode fazer isso, por isso a **extensão é necessária no Wayland**. Sem ela, a janela abre na posição escolhida pelo GNOME e só registra cópias feitas enquanto está em foco.
+
+---
+
+## 🏗️ Arquitetura
+
+```
+┌───────────── GNOME Shell (extensão JS) ─────────────┐
+│ indicator.js        ícone no painel (clique esq./dir.)│
+│ clipboardWatcher.js observa a área de transferência   │
+│ windowPlacer.js     posiciona a janela (cursor/centro)│
+│ daemonClient.js     cliente D-Bus do daemon           │
+└──────────────────────┬───────────────────────────────┘
+                       │ D-Bus: io.github.copynator.Daemon
+┌──────────────────────▼───────────────────────────────┐
+│ copynator (C++23, daemon de instância única)          │
+│  app/       composição e ciclo de vida                │
+│  ui/        janela, linhas, CSS (gtkmm + libadwaita)  │
+│  service/   interface D-Bus (servidor e cliente)      │
+│  platform/  monitor GDK, atalho GNOME, bandeja SNI    │
+│  storage/   repositório SQLite                        │
+│  core/      domínio e regras (sem GTK, testável)      │
+└───────────────────────────────────────────────────────┘
+```
+
+As dependências apontam sempre para o `core`. Ele define as portas (`IHistoryRepository`, `IClipboardMonitor`) que as outras camadas implementam.
+
+### Interface D-Bus
+
+| Membro | Descrição |
+|---|---|
+| `Show(s placement)` | Mostra a janela (`"cursor"` ou `"center"`) |
+| `Toggle(s placement)` | Mostra ou esconde a janela |
+| `Hide()` | Esconde a janela |
+| `AddEntry(s content)` | Registra um texto copiado |
+| `Clear() → u` | Limpa o histórico não fixado |
+| `GetStatus() → (s, u, b, s)` | Versão, total de itens, janela visível e monitor em uso |
+| sinal `WindowShown(s placement)` | Emitido ao mostrar a janela, para a extensão posicioná-la |
+
+### Versionamento
+
+O projeto segue `RELEASE.FEATURE.HOTFIX`. A versão é definida uma única vez em `project(VERSION ...)` no `CMakeLists.txt` e propagada para o binário e para a extensão.
+
+### Migração da versão anterior
+
+Bancos criados pela versão anterior do Copynator (tabela `clipboard_history`) são importados automaticamente na primeira execução. A tabela antiga é preservada.

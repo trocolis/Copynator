@@ -114,6 +114,11 @@ void SqliteStatement::run() {
     }
 }
 
+void SqliteStatement::reset() {
+    sqlite3_reset(statement_.get());
+    sqlite3_clear_bindings(statement_.get());
+}
+
 std::int64_t SqliteStatement::columnInt64(int index) const {
     return sqlite3_column_int64(statement_.get(), index);
 }

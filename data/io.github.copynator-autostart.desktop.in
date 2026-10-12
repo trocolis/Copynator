@@ -1,0 +1,12 @@
+[Desktop Entry]
+# Inicia o daemon em segundo plano ao entrar na sessão, para que nenhuma
+# cópia se perca. No GNOME a extensão também faz isso; iniciar duas vezes é
+# seguro, pois o Copynator é de instância única.
+Type=Application
+Name=Copynator (segundo plano)
+Comment=Monitora a área de transferência
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/copynator --background
+Icon=edit-paste
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

@@ -1,0 +1,15 @@
+[Desktop Entry]
+# Entrada da aplicação. O nome do arquivo é igual ao ID da aplicação
+# (io.github.copynator) para que o GNOME associe a janela a esta entrada.
+# NoDisplay=true: não aparece na grade de aplicativos nem polui a dash.
+Type=Application
+Name=Copynator
+GenericName=Área de transferência
+Comment=Histórico da área de transferência estilo Windows 11
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/copynator --center
+Icon=edit-paste
+Terminal=false
+Categories=Utility;GTK;
+Keywords=clipboard;área de transferência;copiar;colar;histórico;
+NoDisplay=true
+StartupNotify=false

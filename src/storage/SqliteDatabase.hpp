@@ -71,6 +71,9 @@ public:
     // Executa um comando que não retorna linhas.
     void run();
 
+    // Prepara o comando para uma nova execução, limpando os parâmetros.
+    void reset();
+
     // Leitura de colunas da linha atual (índices começam em 0).
     [[nodiscard]] std::int64_t columnInt64(int index) const;
     [[nodiscard]] std::string columnText(int index) const;

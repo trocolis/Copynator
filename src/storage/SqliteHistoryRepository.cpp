@@ -3,6 +3,8 @@
 // =============================================================================
 #include "storage/SqliteHistoryRepository.hpp"
 
+#include "core/ContentClassifier.hpp"
+
 #include <chrono>
 #include <filesystem>
 
@@ -100,12 +102,38 @@ void SqliteHistoryRepository::migrate() {
                 copied_at INTEGER NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_items_order ON items (pinned DESC, copied_at DESC);
-            PRAGMA user_version = 1;
-            COMMIT;
         )sql");
+        importLegacyHistory();
+        database_.execute("PRAGMA user_version = 1; COMMIT;");
     }
     // Futuras migrações: `if (currentVersion < 2) { ... }`
     static_assert(kSchemaVersion == 1, "Adicione a migração para a nova versão do esquema");
+}
+
+void SqliteHistoryRepository::importLegacyHistory() {
+    auto tableQuery = database_.prepare(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'clipboard_history'");
+    if (!tableQuery.step()) {
+        return; // banco novo, nada a importar
+    }
+
+    // A versão antiga guardava datas em segundos; aqui usamos milissegundos.
+    // O tipo é reclassificado com as heurísticas atuais. INSERT OR IGNORE
+    // evita falhas caso o conteúdo já exista em `items`.
+    auto legacyRows =
+        database_.prepare("SELECT content, is_pinned, updated_at FROM clipboard_history");
+    auto insert = database_.prepare(
+        "INSERT OR IGNORE INTO items (content, kind, pinned, copied_at) VALUES (?1, ?2, ?3, ?4)");
+
+    while (legacyRows.step()) {
+        const auto content = legacyRows.columnText(0);
+        insert.reset(); // reaproveita o comando preparado a cada linha
+        insert.bind(1, content)
+            .bind(2, static_cast<std::int64_t>(core::classifyContent(content)))
+            .bind(3, std::int64_t{legacyRows.columnInt64(1) != 0 ? 1 : 0})
+            .bind(4, legacyRows.columnInt64(2) * 1000);
+        insert.run();
+    }
 }
 
 ClipboardItem SqliteHistoryRepository::upsert(std::string_view content, ContentKind kind,
