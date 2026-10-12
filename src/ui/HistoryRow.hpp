@@ -5,8 +5,11 @@
 //
 //   ┌──────────────────────────────────────────────┐
 //   │ Prévia do texto copiado (até 3 linhas)…  📌 🗑 │
-//   │ [Link]  42 caracteres · há 5 min              │
+//   ├──────────────────────────────────────────────┤
+//   │ [Link] 42 caracteres · há 5 min               │  <- margem inferior
 //   └──────────────────────────────────────────────┘
+//
+// A etiqueta aparece apenas para links e código.
 //
 // A linha apenas EXIBE o item e emite sinais; quem decide o que fazer (fixar,
 // excluir, copiar) é a janela, que conhece o HistoryService.
@@ -43,8 +46,8 @@ private:
     core::ClipboardItem item_;
 
     // Widgets (membros diretos: o ciclo de vida acompanha o da linha).
-    Gtk::Box layout_{Gtk::Orientation::HORIZONTAL, 6};
-    Gtk::Box textColumn_{Gtk::Orientation::VERTICAL, 6};
+    Gtk::Box layout_{Gtk::Orientation::VERTICAL, 6};
+    Gtk::Box topRow_{Gtk::Orientation::HORIZONTAL, 6};
     Gtk::Box previewBox_{Gtk::Orientation::VERTICAL, 0}; // rótulos da prévia
     Gtk::Box metadata_{Gtk::Orientation::HORIZONTAL, 6};
     Gtk::Label kindBadge_;

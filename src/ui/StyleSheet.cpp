@@ -102,6 +102,11 @@ window.copynator-window {
     opacity: 0.6;
 }
 
+/* Faixa inferior do cartão com caracteres e tempo */
+.history-row .row-footer {
+    margin-top: 2px;
+}
+
 /* ---------------------------------------------------------------------------
  * Ações do item (fixar/excluir): discretas até passar o mouse
  * ------------------------------------------------------------------------- */

@@ -2,6 +2,11 @@
 
 Versionamento: `RELEASE.FEATURE.HOTFIX`.
 
+## [1.2.0] — 2026-10-11
+### Alterado
+- Itens de texto comum não exibem mais a etiqueta "Texto" (apenas "Link" e "Código").
+- Caracteres e tempo ficam numa faixa própria na margem inferior do cartão.
+
 ## [1.1.1] — 2026-10-11
 ### Corrigido
 - URL do projeto no `metadata.json` da extensão aponta para o repositório real.

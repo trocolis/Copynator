@@ -7,6 +7,7 @@
 #include "core/TextUtils.hpp"
 
 #include <format>
+#include <optional>
 #include <ranges>
 #include <string>
 #include <vector>
@@ -56,16 +57,19 @@ struct KindBadge {
     const char* cssClass;
 };
 
-KindBadge badgeFor(core::ContentKind kind) {
+// Apenas links e código recebem etiqueta: são os casos em que ela ajuda a
+// reconhecer o item. Texto comum (a maioria) fica sem etiqueta, deixando a
+// lista mais limpa.
+std::optional<KindBadge> badgeFor(core::ContentKind kind) {
     switch (kind) {
     case core::ContentKind::Link:
-        return {"Link", "link"};
+        return KindBadge{"Link", "link"};
     case core::ContentKind::Code:
-        return {"Código", "code"};
+        return KindBadge{"Código", "code"};
     case core::ContentKind::Text:
         break;
     }
-    return {"Texto", "text"};
+    return std::nullopt;
 }
 
 // Configura um botão de ação pequeno, redondo e sem fundo.
@@ -93,12 +97,13 @@ HistoryRow::HistoryRow(const core::ClipboardItem& item, core::Timestamp now) : i
     buildMetadata(now);
     buildActions();
 
-    textColumn_.set_hexpand(true);
-    textColumn_.append(previewBox_);
-    textColumn_.append(metadata_);
+    // Parte de cima: prévia + botões. Parte de baixo: etiqueta, caracteres e
+    // tempo em uma faixa que ocupa toda a largura do cartão.
+    topRow_.append(previewBox_);
+    topRow_.append(actions_);
 
-    layout_.append(textColumn_);
-    layout_.append(actions_);
+    layout_.append(topRow_);
+    layout_.append(metadata_);
     set_child(layout_);
 
     // Leitores de tela anunciam a prévia do conteúdo.
@@ -140,10 +145,12 @@ void HistoryRow::buildPreview() {
 }
 
 void HistoryRow::buildMetadata(core::Timestamp now) {
-    const auto badge = badgeFor(item_.kind);
-    kindBadge_.set_text(badge.text);
-    kindBadge_.add_css_class("badge");
-    kindBadge_.add_css_class(badge.cssClass);
+    if (const auto badge = badgeFor(item_.kind)) {
+        kindBadge_.set_text(badge->text);
+        kindBadge_.add_css_class("badge");
+        kindBadge_.add_css_class(badge->cssClass);
+        metadata_.append(kindBadge_);
+    }
 
     const auto characters = core::countCharacters(item_.content);
     details_.set_text(std::format("{} {} · {}", characters,
@@ -152,7 +159,7 @@ void HistoryRow::buildMetadata(core::Timestamp now) {
     details_.add_css_class("meta");
     details_.set_xalign(0.0F);
 
-    metadata_.append(kindBadge_);
+    metadata_.add_css_class("row-footer");
     metadata_.append(details_);
 }
 

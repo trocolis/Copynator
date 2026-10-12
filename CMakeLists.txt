@@ -9,7 +9,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(copynator
-    VERSION 1.1.1
+    VERSION 1.2.0
     DESCRIPTION "Gerenciador de área de transferência estilo Windows 11 para Linux"
     LANGUAGES CXX)
 
