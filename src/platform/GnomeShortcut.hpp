@@ -13,6 +13,7 @@
 #pragma once
 
 #include <expected>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -33,8 +34,19 @@ public:
     static std::expected<void, std::string> install(const std::string& command,
                                                     const std::string& binding);
 
-    // Consulta o estado do atalho e procura conflitos com outros atalhos.
+    // Consulta o estado do atalho e procura conflitos com outros atalhos
+    // (do sistema, personalizados e de extensões habilitadas do GNOME Shell).
     static std::expected<ShortcutStatus, std::string> status(const std::string& binding);
+
+    // Procura atalhos iguais a `binding` nos esquemas GSettings das extensões
+    // instaladas em `extensionRoots` (diretórios ".../gnome-shell/extensions")
+    // cujo UUID esteja em `enabledUuids`. Extensões desabilitadas não contam:
+    // seus atalhos não estão ativos.
+    // Exposto separadamente para permitir testes com diretórios temporários.
+    static std::vector<std::string>
+    findExtensionConflicts(const std::string& binding,
+                           const std::vector<std::filesystem::path>& extensionRoots,
+                           const std::vector<std::string>& enabledUuids);
 };
 
 } // namespace copynator::platform

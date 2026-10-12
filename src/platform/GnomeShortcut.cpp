@@ -66,6 +66,20 @@ std::vector<std::string> readAccelerators(GSettings* settings, const char* key) 
     return accelerators;
 }
 
+// Verifica todas as chaves de um esquema em busca do atalho.
+void findConflictsInSchema(GSettingsSchema* schema, GSettings* settings, const std::string& binding,
+                           const std::string& label, std::vector<std::string>& conflicts) {
+    gchar** keys = g_settings_schema_list_keys(schema);
+    for (gchar** key = keys; *key != nullptr; ++key) {
+        for (const auto& accelerator : readAccelerators(settings, *key)) {
+            if (core::sameAccelerator(accelerator, binding)) {
+                conflicts.push_back(std::format("{} {}", label, *key));
+            }
+        }
+    }
+    g_strfreev(keys);
+}
+
 // Procura atalhos do sistema que usem a mesma combinação de teclas.
 // Usa a API C para listar chaves de qualquer tipo de forma genérica.
 void findSystemConflicts(const std::string& binding, std::vector<std::string>& conflicts) {
@@ -76,21 +90,85 @@ void findSystemConflicts(const std::string& binding, std::vector<std::string>& c
             continue;
         }
         GSettings* settings = g_settings_new(schemaId);
-        gchar** keys = g_settings_schema_list_keys(schema);
-        for (gchar** key = keys; *key != nullptr; ++key) {
-            for (const auto& accelerator : readAccelerators(settings, *key)) {
-                if (core::sameAccelerator(accelerator, binding)) {
-                    conflicts.push_back(std::format("{} {}", schemaId, *key));
-                }
-            }
-        }
-        g_strfreev(keys);
+        findConflictsInSchema(schema, settings, binding, schemaId, conflicts);
         g_object_unref(settings);
         g_settings_schema_unref(schema);
     }
 }
 
+// Diretórios de extensões: o do usuário e os do sistema (XDG).
+std::vector<std::filesystem::path> defaultExtensionRoots() {
+    std::vector<std::filesystem::path> roots{std::filesystem::path(g_get_user_data_dir()) /
+                                             "gnome-shell" / "extensions"};
+    for (const gchar* const* dir = g_get_system_data_dirs(); *dir != nullptr; ++dir) {
+        roots.push_back(std::filesystem::path(*dir) / "gnome-shell" / "extensions");
+    }
+    return roots;
+}
+
+// UUIDs das extensões habilitadas (vazio se o usuário desativou todas).
+std::vector<std::string> enabledExtensionUuids() {
+    if (!schemaExists("org.gnome.shell")) {
+        return {};
+    }
+    auto shell = Gio::Settings::create("org.gnome.shell");
+    if (shell->get_boolean("disable-user-extensions")) {
+        return {};
+    }
+    std::vector<std::string> uuids;
+    for (const auto& uuid : shell->get_string_array("enabled-extensions")) {
+        uuids.push_back(uuid.raw());
+    }
+    return uuids;
+}
+
 } // namespace
+
+std::vector<std::string>
+GnomeShortcut::findExtensionConflicts(const std::string& binding,
+                                      const std::vector<std::filesystem::path>& extensionRoots,
+                                      const std::vector<std::string>& enabledUuids) {
+    std::vector<std::string> conflicts;
+    for (const auto& uuid : enabledUuids) {
+        for (const auto& root : extensionRoots) {
+            // Extensões guardam seus esquemas compilados em <uuid>/schemas/.
+            const auto schemaDir = root / uuid / "schemas";
+            std::error_code error;
+            if (!std::filesystem::exists(schemaDir / "gschemas.compiled", error)) {
+                continue;
+            }
+
+            GSettingsSchemaSource* source = g_settings_schema_source_new_from_directory(
+                schemaDir.c_str(), g_settings_schema_source_get_default(), FALSE, nullptr);
+            if (source == nullptr) {
+                continue;
+            }
+            // Lista apenas os esquemas da própria extensão (não os do sistema).
+            gchar** schemaIds = nullptr;
+            g_settings_schema_source_list_schemas(source, FALSE, &schemaIds, nullptr);
+            for (gchar** schemaId = schemaIds; schemaId != nullptr && *schemaId != nullptr;
+                 ++schemaId) {
+                GSettingsSchema* schema = g_settings_schema_source_lookup(source, *schemaId, FALSE);
+                if (schema == nullptr || g_settings_schema_get_path(schema) == nullptr) {
+                    // Esquemas relocáveis (sem caminho fixo) não têm valores a ler.
+                    if (schema != nullptr) {
+                        g_settings_schema_unref(schema);
+                    }
+                    continue;
+                }
+                GSettings* settings = g_settings_new_full(schema, nullptr, nullptr);
+                findConflictsInSchema(schema, settings, binding, std::format("extensão {}", uuid),
+                                      conflicts);
+                g_object_unref(settings);
+                g_settings_schema_unref(schema);
+            }
+            g_strfreev(schemaIds);
+            g_settings_schema_source_unref(source);
+            break; // o diretório do usuário tem prioridade sobre o do sistema
+        }
+    }
+    return conflicts;
+}
 
 std::expected<void, std::string> GnomeShortcut::install(const std::string& command,
                                                         const std::string& binding) {
@@ -142,6 +220,11 @@ std::expected<ShortcutStatus, std::string> GnomeShortcut::status(const std::stri
     }
 
     findSystemConflicts(binding, status.conflicts);
+
+    auto extensionConflicts =
+        findExtensionConflicts(binding, defaultExtensionRoots(), enabledExtensionUuids());
+    status.conflicts.insert(status.conflicts.end(), extensionConflicts.begin(),
+                            extensionConflicts.end());
     return status;
 }
 

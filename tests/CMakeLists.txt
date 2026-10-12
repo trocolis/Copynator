@@ -8,6 +8,7 @@ add_executable(copynator_tests
     AcceleratorTest.cpp
     CommandLineTest.cpp
     ContentClassifierTest.cpp
+    GnomeShortcutTest.cpp
     HistoryServiceTest.cpp
     PlacementTest.cpp
     RelativeTimeTest.cpp
@@ -17,6 +18,7 @@ add_executable(copynator_tests
 target_link_libraries(copynator_tests PRIVATE
     copynator_core
     copynator_storage
+    copynator_platform
     GTest::gtest_main)
 copynator_set_warnings(copynator_tests)
 

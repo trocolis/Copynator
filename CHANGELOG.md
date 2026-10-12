@@ -2,6 +2,10 @@
 
 Versionamento: `RELEASE.FEATURE.HOTFIX`.
 
+## [1.1.0] — 2026-10-11
+### Adicionado
+- `--status` e `--setup-shortcut` também detectam conflitos com atalhos de extensões habilitadas do GNOME Shell (ex.: outros gerenciadores de área de transferência).
+
 ## [1.0.0] — 2026-10-11
 
 Primeira versão estável da reescrita em C++.
