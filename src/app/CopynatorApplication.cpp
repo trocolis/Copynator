@@ -3,9 +3,14 @@
 // =============================================================================
 #include "app/CopynatorApplication.hpp"
 
+#include "core/Accelerator.hpp"
 #include "core/CommandLine.hpp"
 #include "core/Version.hpp"
+#include "platform/ExecutablePath.hpp"
 #include "platform/GdkClipboardMonitor.hpp"
+#include "platform/GnomeShortcut.hpp"
+#include "platform/ShellExtensionState.hpp"
+#include "platform/StatusNotifierItem.hpp"
 #include "service/DaemonDBusService.hpp"
 #include "ui/HistoryWindow.hpp"
 #include "ui/StyleSheet.hpp"
@@ -79,6 +84,8 @@ void CopynatorApplication::on_startup() {
 }
 
 void CopynatorApplication::on_shutdown() {
+    tray_.reset();
+    extensionState_.reset();
     dbusService_.reset();
     clipboardMonitor_.reset();
     Gtk::Application::on_shutdown();
@@ -133,6 +140,7 @@ ui::HistoryWindow& CopynatorApplication::ensureWindow() {
         add_window(*window_);
         window_->signalItemChosen().connect(
             sigc::mem_fun(*this, &CopynatorApplication::copyToClipboard));
+        startDaemonFeatures();
     }
     return *window_;
 }
@@ -141,7 +149,40 @@ void CopynatorApplication::enterBackground() {
     if (!backgroundHeld_) {
         hold();
         backgroundHeld_ = true;
+        startDaemonFeatures();
     }
+}
+
+void CopynatorApplication::startDaemonFeatures() {
+    const auto connection = get_dbus_connection();
+    if (tray_ || !connection) {
+        return;
+    }
+
+    tray_ = std::make_unique<platform::StatusNotifierItem>(
+        connection->gobj(),
+        platform::TrayActions{
+            .toggleWindow =
+                [this](const std::string& token) {
+                    toggleWithActivationToken(core::Placement::Centered, token);
+                },
+            .clearHistory = [this] { clearHistory(); },
+            .setupShortcut =
+                [] {
+                    const auto result = platform::GnomeShortcut::install(
+                        platform::resolveExecutablePath(), std::string(core::kDefaultAccelerator));
+                    if (!result) {
+                        g_warning("Copynator: falha ao configurar atalho: %s", result.error().c_str());
+                    }
+                },
+        });
+
+    // No GNOME com a extensão do Copynator ativa, o ícone já está no painel:
+    // o SNI fica desligado para não haver dois ícones. A escolha acompanha a
+    // ativação/desativação da extensão em tempo real.
+    extensionState_ = std::make_unique<platform::ShellExtensionState>();
+    tray_->setEnabled(!extensionState_->isExtensionEnabled());
+    extensionState_->onChanged([this](bool extensionEnabled) { tray_->setEnabled(!extensionEnabled); });
 }
 
 // -----------------------------------------------------------------------------
@@ -152,6 +193,15 @@ void CopynatorApplication::show(core::Placement placement) {
     ensureWindow().presentFresh();
     // Avisa a extensão do GNOME Shell para posicionar a janela.
     dbusService_->emitWindowShown(placement);
+}
+
+void CopynatorApplication::toggleWithActivationToken(core::Placement placement,
+                                                     const std::string& token) {
+    // O token permite que a janela receba o foco ao ser mostrada no Wayland.
+    if (!token.empty()) {
+        ensureWindow().set_startup_id(token);
+    }
+    toggle(placement);
 }
 
 void CopynatorApplication::toggle(core::Placement placement) {

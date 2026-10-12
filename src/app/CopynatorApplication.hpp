@@ -7,7 +7,8 @@
 //     executado com o daemon já rodando é repassado para esta instância);
 //   - criar a janela sob demanda e tratar a escolha de itens;
 //   - publicar a interface D-Bus usada pela extensão do GNOME Shell;
-//   - monitorar a área de transferência e alimentar o histórico.
+//   - monitorar a área de transferência e alimentar o histórico;
+//   - mostrar o ícone de bandeja (SNI) fora do GNOME/sem a extensão.
 //
 // Ciclo de vida:
 //   - `--background` segura (hold) a aplicação sem mostrar a janela;
@@ -31,6 +32,10 @@ class HistoryWindow;
 }
 namespace copynator::service {
 class DaemonDBusService;
+}
+namespace copynator::platform {
+class ShellExtensionState;
+class StatusNotifierItem;
 }
 
 namespace copynator::app {
@@ -68,6 +73,13 @@ private:
     // Mantém o processo vivo sem janela visível (modo daemon).
     void enterBackground();
 
+    // Recursos que só fazem sentido no processo que fica rodando (daemon):
+    // ícone de bandeja SNI. Chamado uma única vez, sob demanda.
+    void startDaemonFeatures();
+
+    // Alterna a janela usando um token xdg-activation (foco no Wayland).
+    void toggleWithActivationToken(core::Placement placement, const std::string& token);
+
     // Coloca o conteúdo do item na área de transferência do sistema.
     void copyToClipboard(const core::ClipboardItem& item);
 
@@ -76,6 +88,8 @@ private:
     std::unique_ptr<core::IClipboardMonitor> clipboardMonitor_;
     std::unique_ptr<ui::HistoryWindow> window_;
     std::unique_ptr<service::DaemonDBusService> dbusService_;
+    std::unique_ptr<platform::ShellExtensionState> extensionState_;
+    std::unique_ptr<platform::StatusNotifierItem> tray_;
     bool backgroundHeld_ = false;
 };
 

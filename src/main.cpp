@@ -9,6 +9,7 @@
 #include "core/CommandLine.hpp"
 #include "core/HistoryService.hpp"
 #include "core/Version.hpp"
+#include "platform/ExecutablePath.hpp"
 #include "platform/GnomeShortcut.hpp"
 #include "service/DaemonClient.hpp"
 #include "storage/SqliteHistoryRepository.hpp"
@@ -16,8 +17,6 @@
 
 #include <cstdlib>
 #include <exception>
-#include <filesystem>
-#include <glibmm/miscutils.h>
 #include <memory>
 #include <print>
 #include <span>
@@ -42,17 +41,6 @@ int runApplication(int argc, char* argv[]) {
     return application->run(argc, argv);
 }
 
-// Caminho do executável usado no atalho. Prefere o `copynator` do PATH
-// (ex.: ~/.local/bin), estável entre recompilações; senão, o binário atual.
-std::string resolveExecutablePath() {
-    if (auto inPath = Glib::find_program_in_path("copynator"); !inPath.empty()) {
-        return inPath;
-    }
-    std::error_code error;
-    const auto self = std::filesystem::read_symlink("/proc/self/exe", error);
-    return error ? std::string("copynator") : self.string();
-}
-
 // Mostra os conflitos encontrados para o atalho.
 void printConflicts(const std::vector<std::string>& conflicts) {
     for (const auto& conflict : conflicts) {
@@ -62,7 +50,7 @@ void printConflicts(const std::vector<std::string>& conflicts) {
 
 // --setup-shortcut: registra Shift+Super+V no GNOME.
 int setupShortcut() {
-    const auto command = resolveExecutablePath();
+    const auto command = platform::resolveExecutablePath();
     const std::string binding(core::kDefaultAccelerator);
 
     if (const auto installed = platform::GnomeShortcut::install(command, binding); !installed) {

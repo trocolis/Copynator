@@ -83,8 +83,11 @@ copynator_set_warnings(copynator_service)
 # Camada platform: integrações com o sistema operacional/desktop
 # -----------------------------------------------------------------------------
 add_library(copynator_platform STATIC
+    platform/ExecutablePath.cpp
     platform/GdkClipboardMonitor.cpp
     platform/GnomeShortcut.cpp
+    platform/ShellExtensionState.cpp
+    platform/StatusNotifierItem.cpp
 )
 target_link_libraries(copynator_platform
     PUBLIC copynator_core PkgConfig::GTKMM)
