@@ -19,6 +19,9 @@ configure_file(
 # -----------------------------------------------------------------------------
 add_library(copynator_core STATIC
     core/CommandLine.cpp
+    core/ContentClassifier.cpp
+    core/RelativeTime.cpp
+    core/TextUtils.cpp
 )
 target_include_directories(copynator_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}

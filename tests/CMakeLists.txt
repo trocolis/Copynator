@@ -6,6 +6,9 @@ include(GoogleTest)
 
 add_executable(copynator_tests
     CommandLineTest.cpp
+    ContentClassifierTest.cpp
+    RelativeTimeTest.cpp
+    TextUtilsTest.cpp
 )
 target_link_libraries(copynator_tests PRIVATE
     copynator_core
