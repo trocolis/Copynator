@@ -22,6 +22,7 @@ const DAEMON_INTERFACE_XML = `
     <method name="AddEntry"><arg name="content" type="s" direction="in"/></method>
     <method name="Clear"><arg name="removed" type="u" direction="out"/></method>
     <signal name="WindowShown"><arg name="placement" type="s"/></signal>
+    <signal name="PasteRequested"/>
   </interface>
 </node>`;
 
@@ -29,12 +30,16 @@ const DaemonProxy = Gio.DBusProxy.makeProxyWrapper(DAEMON_INTERFACE_XML);
 
 export class DaemonClient {
     /**
-     * @param {(placement: string) => void} onWindowShown chamado quando o
-     *        daemon mostra a janela ("cursor" ou "center").
+     * @param {object} handlers
+     * @param {(placement: string) => void} handlers.onWindowShown chamado
+     *        quando o daemon mostra a janela ("cursor" ou "center").
+     * @param {() => void} handlers.onPasteRequested chamado quando um item é
+     *        escolhido e deve ser colado na janela anterior.
      */
-    constructor(onWindowShown) {
+    constructor({onWindowShown, onPasteRequested}) {
         this._onWindowShown = onWindowShown;
-        this._signalId = 0;
+        this._onPasteRequested = onPasteRequested;
+        this._signalIds = [];
 
         // DO_NOT_AUTO_START: o daemon é iniciado explicitamente por nós, com
         // o executável correto, e não pelo mecanismo de ativação do D-Bus.
@@ -45,8 +50,12 @@ export class DaemonClient {
                     console.warn(`[Copynator] Falha ao criar proxy D-Bus: ${error.message}`);
                     return;
                 }
-                this._signalId = proxy.connectSignal('WindowShown',
-                    (_proxy, _sender, [placement]) => this._onWindowShown(placement));
+                this._signalIds = [
+                    proxy.connectSignal('WindowShown',
+                        (_proxy, _sender, [placement]) => this._onWindowShown(placement)),
+                    proxy.connectSignal('PasteRequested',
+                        () => this._onPasteRequested()),
+                ];
             },
             null,
             Gio.DBusProxyFlags.DO_NOT_AUTO_START);
@@ -106,9 +115,8 @@ export class DaemonClient {
     }
 
     destroy() {
-        if (this._proxy && this._signalId) {
-            this._proxy.disconnectSignal(this._signalId);
-        }
+        this._signalIds.forEach(id => this._proxy?.disconnectSignal(id));
+        this._signalIds = [];
         this._proxy = null;
     }
 

@@ -78,6 +78,9 @@ inline constexpr std::string_view kIntrospectionXml = R"xml(
       <arg name="window_visible" type="b" direction="out"/>
       <arg name="monitor" type="s" direction="out"/>
     </method>
+    <!-- Emitido após copiar o item escolhido: a extensão cola (Ctrl+V) na
+         janela que estava em foco antes do Copynator -->
+    <signal name="PasteRequested"/>
     <!-- Emitido quando a janela é mostrada, para que a extensão a posicione -->
     <signal name="WindowShown">
       <arg name="placement" type="s"/>

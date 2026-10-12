@@ -33,6 +33,9 @@ public:
     // Emite o sinal WindowShown(placement).
     void emitWindowShown(core::Placement placement);
 
+    // Emite o sinal PasteRequested().
+    void emitPasteRequested();
+
 private:
     void onMethodCall(const Glib::RefPtr<Gio::DBus::Connection>& connection,
                       const Glib::ustring& sender, const Glib::ustring& objectPath,

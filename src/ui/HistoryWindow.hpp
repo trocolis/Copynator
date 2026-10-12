@@ -37,7 +37,8 @@ public:
     // mostra a janela com o foco no campo de busca.
     void presentFresh();
 
-    // Emitido quando o usuário escolhe um item (Enter ou clique).
+    // Emitido quando o usuário escolhe um item (Enter ou clique). A aplicação
+    // copia o item e pede a colagem na janela anterior.
     sigc::signal<void(const core::ClipboardItem&)>& signalItemChosen() { return itemChosen_; }
 
 private:

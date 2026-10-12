@@ -5,6 +5,7 @@
 //   DaemonClient     -> conversa com o daemon via D-Bus
 //   ClipboardWatcher -> envia ao daemon cada texto copiado (essencial no Wayland)
 //   WindowPlacer     -> posiciona a janela no cursor ou no centro da tela
+//   Paster           -> cola o item escolhido na janela anterior (Ctrl+V)
 //   Indicator        -> ícone no painel com clique esquerdo/direito
 // =============================================================================
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -13,6 +14,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {ClipboardWatcher} from './clipboardWatcher.js';
 import {DaemonClient} from './daemonClient.js';
 import {CopynatorIndicator} from './indicator.js';
+import {Paster} from './paster.js';
 import {WindowPlacer} from './windowPlacer.js';
 
 const APP_ID = 'io.github.copynator';
@@ -21,8 +23,12 @@ export default class CopynatorExtension extends Extension {
     enable() {
         this._windowPlacer = new WindowPlacer(APP_ID);
 
-        this._daemon = new DaemonClient(
-            placement => this._windowPlacer.requestPlacement(placement));
+        this._paster = new Paster(APP_ID);
+
+        this._daemon = new DaemonClient({
+            onWindowShown: placement => this._windowPlacer.requestPlacement(placement),
+            onPasteRequested: () => this._paster.requestPaste(),
+        });
 
         // Inicia o daemon em segundo plano para que nenhuma cópia se perca.
         this._daemon.ensureRunning();
@@ -52,6 +58,9 @@ export default class CopynatorExtension extends Extension {
 
         this._daemon?.destroy();
         this._daemon = null;
+
+        this._paster?.destroy();
+        this._paster = null;
 
         this._windowPlacer?.destroy();
         this._windowPlacer = null;

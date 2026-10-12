@@ -52,7 +52,7 @@ private:
     Gtk::Box metadata_{Gtk::Orientation::HORIZONTAL, 6};
     Gtk::Label kindBadge_;
     Gtk::Label details_;
-    Gtk::Box actions_{Gtk::Orientation::VERTICAL, 2};
+    Gtk::Box actions_{Gtk::Orientation::HORIZONTAL, 2}; // botões lado a lado
     Gtk::Button pinButton_;
     Gtk::Button deleteButton_;
 

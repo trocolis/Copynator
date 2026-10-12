@@ -247,6 +247,11 @@ void CopynatorApplication::copyToClipboard(const core::ClipboardItem& item) {
 
     // Reutilizar um item o move para o topo do histórico.
     history_->recordCopy(item.content);
+
+    // Como no Win+V, o item escolhido também é colado. No Wayland apenas o
+    // GNOME Shell pode simular teclas, então a extensão faz a colagem ao
+    // receber este sinal (depois que o foco volta para a janela anterior).
+    dbusService_->emitPasteRequested();
 }
 
 } // namespace copynator::app

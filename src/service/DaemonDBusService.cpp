@@ -54,6 +54,13 @@ void DaemonDBusService::emitWindowShown(core::Placement placement) {
                              "WindowShown", {}, parameters);
 }
 
+void DaemonDBusService::emitPasteRequested() {
+    if (connection_) {
+        connection_->emit_signal(std::string(kObjectPath), std::string(kInterfaceName),
+                                 "PasteRequested", {}, {});
+    }
+}
+
 std::optional<core::Placement>
 DaemonDBusService::readPlacement(const Glib::VariantContainerBase& parameters,
                                  const Glib::RefPtr<Gio::DBus::MethodInvocation>& invocation) {
