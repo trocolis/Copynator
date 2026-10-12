@@ -5,15 +5,19 @@
 // delega o trabalho real para as camadas da aplicação.
 // =============================================================================
 #include "app/CopynatorApplication.hpp"
+#include "core/Accelerator.hpp"
 #include "core/CommandLine.hpp"
 #include "core/HistoryService.hpp"
 #include "core/Version.hpp"
+#include "platform/GnomeShortcut.hpp"
 #include "service/DaemonClient.hpp"
 #include "storage/SqliteHistoryRepository.hpp"
 #include "storage/StoragePaths.hpp"
 
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
+#include <glibmm/miscutils.h>
 #include <memory>
 #include <print>
 #include <span>
@@ -38,7 +42,42 @@ int runApplication(int argc, char* argv[]) {
     return application->run(argc, argv);
 }
 
-// --status: mostra o estado do daemon.
+// Caminho do executável usado no atalho. Prefere o `copynator` do PATH
+// (ex.: ~/.local/bin), estável entre recompilações; senão, o binário atual.
+std::string resolveExecutablePath() {
+    if (auto inPath = Glib::find_program_in_path("copynator"); !inPath.empty()) {
+        return inPath;
+    }
+    std::error_code error;
+    const auto self = std::filesystem::read_symlink("/proc/self/exe", error);
+    return error ? std::string("copynator") : self.string();
+}
+
+// Mostra os conflitos encontrados para o atalho.
+void printConflicts(const std::vector<std::string>& conflicts) {
+    for (const auto& conflict : conflicts) {
+        std::println("  ⚠ conflito com: {}", conflict);
+    }
+}
+
+// --setup-shortcut: registra Shift+Super+V no GNOME.
+int setupShortcut() {
+    const auto command = resolveExecutablePath();
+    const std::string binding(core::kDefaultAccelerator);
+
+    if (const auto installed = platform::GnomeShortcut::install(command, binding); !installed) {
+        std::println(stderr, "copynator: não foi possível configurar o atalho: {}",
+                     installed.error());
+        return EXIT_FAILURE;
+    }
+    std::println("Atalho Shift+Super+V configurado para executar: {}", command);
+    if (const auto status = platform::GnomeShortcut::status(binding); status) {
+        printConflicts(status->conflicts);
+    }
+    return EXIT_SUCCESS;
+}
+
+// --status: mostra o estado do daemon e do atalho.
 int printStatus() {
     if (const auto status = service::DaemonClient::queryStatus()) {
         std::println("Daemon:    em execução (versão {})", status->version);
@@ -47,6 +86,18 @@ int printStatus() {
         std::println("Monitor:   {}", status->monitorDescription);
     } else {
         std::println("Daemon:    parado (inicie com `copynator --background`)");
+    }
+
+    const auto shortcut = platform::GnomeShortcut::status(std::string(core::kDefaultAccelerator));
+    if (!shortcut) {
+        std::println("Atalho:    indisponível ({})", shortcut.error());
+    } else if (!shortcut->installed) {
+        std::println("Atalho:    não configurado (execute `copynator --setup-shortcut`)");
+    } else {
+        std::println("Atalho:    {} -> {}", shortcut->binding, shortcut->command);
+    }
+    if (shortcut) {
+        printConflicts(shortcut->conflicts);
     }
     return EXIT_SUCCESS;
 }
@@ -67,9 +118,7 @@ int dispatch(const core::CommandLineOptions& options, int argc, char* argv[]) {
         return printStatus();
 
     case CommandAction::SetupShortcut:
-        // Implementado em uma versão futura.
-        std::println(stderr, "copynator: ação ainda não implementada nesta versão");
-        return EXIT_FAILURE;
+        return setupShortcut();
 
     case CommandAction::ShowAtCursor:
     case CommandAction::ShowCentered:

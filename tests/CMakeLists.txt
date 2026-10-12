@@ -5,6 +5,7 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 
 add_executable(copynator_tests
+    AcceleratorTest.cpp
     CommandLineTest.cpp
     ContentClassifierTest.cpp
     HistoryServiceTest.cpp

@@ -23,6 +23,7 @@ configure_file(
 # Camada core: lógica pura
 # -----------------------------------------------------------------------------
 add_library(copynator_core STATIC
+    core/Accelerator.cpp
     core/CommandLine.cpp
     core/HistoryService.cpp
     core/ContentClassifier.cpp
@@ -83,6 +84,7 @@ copynator_set_warnings(copynator_service)
 # -----------------------------------------------------------------------------
 add_library(copynator_platform STATIC
     platform/GdkClipboardMonitor.cpp
+    platform/GnomeShortcut.cpp
 )
 target_link_libraries(copynator_platform
     PUBLIC copynator_core PkgConfig::GTKMM)
@@ -103,7 +105,7 @@ copynator_set_warnings(copynator_app)
 # Executável principal
 # -----------------------------------------------------------------------------
 add_executable(copynator main.cpp)
-target_link_libraries(copynator PRIVATE copynator_app)
+target_link_libraries(copynator PRIVATE copynator_app copynator_platform)
 copynator_set_warnings(copynator)
 
 install(TARGETS copynator RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
