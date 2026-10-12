@@ -6,6 +6,8 @@
 // =============================================================================
 #include "core/CommandLine.hpp"
 #include "core/Version.hpp"
+#include "storage/SqliteHistoryRepository.hpp"
+#include "storage/StoragePaths.hpp"
 
 #include <cstdlib>
 #include <print>
@@ -35,6 +37,15 @@ int main(int argc, char* argv[]) {
     case CommandAction::PrintVersion:
         std::println("{} {}", copynator::version::kAppName, copynator::version::kString);
         return EXIT_SUCCESS;
+
+    case CommandAction::ClearHistory: {
+        // Acesso direto ao banco: funciona mesmo sem o daemon em execução.
+        copynator::storage::SqliteHistoryRepository repository(
+            copynator::storage::historyDatabasePath().string());
+        const auto removed = repository.clearUnpinned();
+        std::println("{} item(ns) removido(s) do histórico.", removed);
+        return EXIT_SUCCESS;
+    }
 
     default:
         // As demais ações serão implementadas nas próximas versões.

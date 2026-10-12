@@ -7,11 +7,14 @@ include(GoogleTest)
 add_executable(copynator_tests
     CommandLineTest.cpp
     ContentClassifierTest.cpp
+    HistoryServiceTest.cpp
     RelativeTimeTest.cpp
+    SqliteHistoryRepositoryTest.cpp
     TextUtilsTest.cpp
 )
 target_link_libraries(copynator_tests PRIVATE
     copynator_core
+    copynator_storage
     GTest::gtest_main)
 copynator_set_warnings(copynator_tests)
 
