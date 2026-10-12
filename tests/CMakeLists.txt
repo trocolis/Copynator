@@ -8,6 +8,7 @@ add_executable(copynator_tests
     CommandLineTest.cpp
     ContentClassifierTest.cpp
     HistoryServiceTest.cpp
+    PlacementTest.cpp
     RelativeTimeTest.cpp
     SqliteHistoryRepositoryTest.cpp
     TextUtilsTest.cpp

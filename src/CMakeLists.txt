@@ -6,6 +6,7 @@
 #
 #   copynator_core    -> regras de negócio puras, sem GTK (testável)
 #   copynator_storage -> persistência (SQLite), implementa as portas do core
+#   copynator_service -> interface D-Bus do daemon (servidor e cliente)
 #   copynator_ui      -> interface gráfica (gtkmm + libadwaita)
 #   copynator_app     -> composição da aplicação (liga todas as camadas)
 #   copynator (exe) -> ponto de entrada que compõe todas as camadas
@@ -64,13 +65,26 @@ target_link_libraries(copynator_ui
 copynator_set_warnings(copynator_ui)
 
 # -----------------------------------------------------------------------------
+# Camada service: D-Bus (giomm)
+# -----------------------------------------------------------------------------
+pkg_check_modules(GIOMM REQUIRED IMPORTED_TARGET giomm-2.68)
+
+add_library(copynator_service STATIC
+    service/DaemonClient.cpp
+    service/DaemonDBusService.cpp
+)
+target_link_libraries(copynator_service
+    PUBLIC copynator_core PkgConfig::GIOMM)
+copynator_set_warnings(copynator_service)
+
+# -----------------------------------------------------------------------------
 # Camada app: composição
 # -----------------------------------------------------------------------------
 add_library(copynator_app STATIC
     app/CopynatorApplication.cpp
 )
 target_link_libraries(copynator_app
-    PUBLIC copynator_ui copynator_storage
+    PUBLIC copynator_ui copynator_storage copynator_service
     PRIVATE PkgConfig::LIBADWAITA)
 copynator_set_warnings(copynator_app)
 

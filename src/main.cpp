@@ -8,10 +8,10 @@
 #include "core/CommandLine.hpp"
 #include "core/HistoryService.hpp"
 #include "core/Version.hpp"
+#include "service/DaemonClient.hpp"
 #include "storage/SqliteHistoryRepository.hpp"
 #include "storage/StoragePaths.hpp"
 
-#include <array>
 #include <cstdlib>
 #include <exception>
 #include <memory>
@@ -31,15 +31,26 @@ std::unique_ptr<core::HistoryService> makeHistoryService() {
     return std::make_unique<core::HistoryService>(std::move(repository));
 }
 
-// Executa a interface gráfica. O argv repassado ao GTK contém apenas o nome do
-// programa, pois as opções já foram interpretadas pelo nosso parser.
-int runGui(char* programName) {
-    auto application = app::CopynatorApplication::create(makeHistoryService());
-    std::array<char*, 1> guiArguments{programName};
-    return application->run(static_cast<int>(guiArguments.size()), guiArguments.data());
+// Executa a aplicação GTK com o argv original. Se já houver um daemon rodando,
+// o GApplication apenas repassa os argumentos para ele e encerra.
+int runApplication(int argc, char* argv[]) {
+    auto application = app::CopynatorApplication::create(makeHistoryService);
+    return application->run(argc, argv);
 }
 
-int dispatch(const core::CommandLineOptions& options, char* programName) {
+// --status: mostra o estado do daemon.
+int printStatus() {
+    if (const auto status = service::DaemonClient::queryStatus()) {
+        std::println("Daemon:    em execução (versão {})", status->version);
+        std::println("Histórico: {} item(ns)", status->itemCount);
+        std::println("Janela:    {}", status->windowVisible ? "visível" : "escondida");
+    } else {
+        std::println("Daemon:    parado (inicie com `copynator --background`)");
+    }
+    return EXIT_SUCCESS;
+}
+
+int dispatch(const core::CommandLineOptions& options, int argc, char* argv[]) {
     using core::CommandAction;
 
     switch (options.action) {
@@ -51,23 +62,22 @@ int dispatch(const core::CommandLineOptions& options, char* programName) {
         std::println("{} {}", version::kAppName, version::kString);
         return EXIT_SUCCESS;
 
-    case CommandAction::ClearHistory: {
-        // Acesso direto ao banco: funciona mesmo sem o daemon em execução.
-        storage::SqliteHistoryRepository repository(storage::historyDatabasePath().string());
-        const auto removed = repository.clearUnpinned();
-        std::println("{} item(ns) removido(s) do histórico.", removed);
-        return EXIT_SUCCESS;
-    }
+    case CommandAction::ShowStatus:
+        return printStatus();
+
+    case CommandAction::SetupShortcut:
+        // Implementado em uma versão futura.
+        std::println(stderr, "copynator: ação ainda não implementada nesta versão");
+        return EXIT_FAILURE;
 
     case CommandAction::ShowAtCursor:
     case CommandAction::ShowCentered:
-        return runGui(programName);
-
-    default:
-        // As demais ações serão implementadas nas próximas versões.
-        std::println(stderr, "copynator: ação ainda não implementada nesta versão");
-        return EXIT_FAILURE;
+    case CommandAction::RunBackground:
+    case CommandAction::ClearHistory:
+        // Ações do daemon: tratadas em CopynatorApplication::on_command_line.
+        return runApplication(argc, argv);
     }
+    return EXIT_FAILURE;
 }
 
 } // namespace
@@ -87,7 +97,7 @@ int main(int argc, char* argv[]) {
     // Última barreira contra exceções não tratadas (ex.: banco inacessível),
     // garantindo uma mensagem clara em vez de um "terminate called...".
     try {
-        return dispatch(*options, rawArguments.front());
+        return dispatch(*options, argc, argv);
     } catch (const std::exception& error) {
         std::println(stderr, "copynator: erro: {}", error.what());
         return EXIT_FAILURE;
