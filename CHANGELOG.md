@@ -2,6 +2,13 @@
 
 Versionamento: `RELEASE.FEATURE.HOTFIX`.
 
+## [1.3.1] — 2026-10-13
+### Corrigido
+- Compilação com gtkmm 4.10 (Ubuntu 24.04 / Linux Mint 22): `Gtk::CssProvider::load_from_data` e remoção das linhas uma a uma quando `load_from_string` e `Gtk::ListBox::remove_all` (gtkmm 4.12+) não existem.
+
+### Documentação
+- README: dependências e observações para Ubuntu 24.04 / Linux Mint 22.
+
 ## [1.3.0] — 2026-10-11
 ### Adicionado
 - Escolher um item (clique ou Enter) também o cola no aplicativo que estava em foco, como no Win+V. A extensão envia `Ctrl+V` (ou `Ctrl+Shift+V` em terminais) por um teclado virtual do GNOME Shell, após o sinal D-Bus `PasteRequested`.

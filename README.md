@@ -45,6 +45,15 @@
 sudo pacman -S --needed base-devel cmake ninja gtkmm-4.0 libadwaita sqlite gtest
 ```
 
+### Dependências (Ubuntu 24.04 / Linux Mint 22)
+```bash
+sudo apt install build-essential g++-14 cmake ninja-build pkg-config \
+  libgtkmm-4.0-dev libadwaita-1-dev libsqlite3-dev libglibmm-2.68-dev libgtest-dev
+```
+> O g++ 13 padrão dessas distros não tem `<print>` (C++23). Use o g++-14, acrescentando `-DCMAKE_CXX_COMPILER=g++-14` ao primeiro comando `cmake` do passo 1. O gtkmm 4.10 dessas versões é suportado.
+>
+> Em sessões X11, recarregue o GNOME Shell depois da instalação (`Alt + F2`, `r`, `Enter`) para ele encontrar a extensão.
+
 ### 1. Compilar e Instalar
 ```bash
 # Configura a instalação na pasta do usuário (~/.local)

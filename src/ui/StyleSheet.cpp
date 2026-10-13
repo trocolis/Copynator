@@ -5,6 +5,7 @@
 
 #include <gtkmm/cssprovider.h>
 #include <gtkmm/styleprovider.h>
+#include <gtkmm/version.h>
 
 namespace copynator::ui {
 
@@ -143,7 +144,12 @@ window.copynator-window {
 
 void installStyleSheet() {
     auto provider = Gtk::CssProvider::create();
+#if GTKMM_CHECK_VERSION(4, 12, 0)
     provider->load_from_string(kStyleSheet);
+#else
+    // gtkmm < 4.12 (ex.: Ubuntu 24.04 / Linux Mint 22) não tem load_from_string.
+    provider->load_from_data(kStyleSheet);
+#endif
     Gtk::StyleProvider::add_provider_for_display(Gdk::Display::get_default(), provider,
                                                 GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 }

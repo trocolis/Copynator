@@ -8,6 +8,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <glibmm/main.h>
 #include <gtkmm/eventcontrollerkey.h>
+#include <gtkmm/version.h>
 
 namespace copynator::ui {
 
@@ -170,7 +171,14 @@ void HistoryWindow::reloadItems() {
     const auto* previouslyFocused = focusedRow();
     const int focusedIndex = previouslyFocused != nullptr ? previouslyFocused->get_index() : -1;
 
+#if GTKMM_CHECK_VERSION(4, 12, 0)
     list_.remove_all();
+#else
+    // gtkmm < 4.12 (ex.: Ubuntu 24.04 / Linux Mint 22) não tem remove_all.
+    while (auto* child = list_.get_first_child()) {
+        list_.remove(*child);
+    }
+#endif
 
     const auto filter = searchEntry_.get_text();
     const auto items = history_.items(filter.raw());
